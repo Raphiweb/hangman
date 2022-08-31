@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
-require_relative 'modules.rb'
+require_relative 'modules'
 require 'json'
 
 class Game
   include TextModule
 
   def initialize
-    @word_collection = File.open("words.txt")
+    @word_collection = File.open('words.txt')
     @hangman_words = []
     @already_guessed = []
-    @guess_word
-    @guess_word_with_blanks
+    @guess_word = nil
+    @guess_word_with_blanks = nil
     @counter = 10
     @game_over = false
     start
@@ -20,20 +20,17 @@ class Game
   def find_hangman_words
     @word_collection.map do |word|
       word = word.chomp
-      if word.length >= 5 && word.length <= 12
-        word
-        @hangman_words.push(word)
-      end
+      @hangman_words.push(word) if word.length >= 5 && word.length <= 12
     end
   end
 
   def find_guess_word
-    p @guess_word = @hangman_words.sample
-    @guess_word_with_blanks = @guess_word.gsub(/[A-Za-z]/, "_") 
+    @guess_word = @hangman_words.sample
+    @guess_word_with_blanks = @guess_word.gsub(/[A-Za-z]/, '_')
   end
 
-  def get_user_letter
-    get_user_letter_text
+  def user_letter
+    user_letter_text
     puts "Wrong letters: #{@already_guessed}"
     letter = gets.chomp.downcase
   end
@@ -41,25 +38,23 @@ class Game
   def check_for_match(guess)
     if @guess_word.include?(guess) == true
       @guess_word.each_char.with_index do |char, index|
-        if guess == char
-          @guess_word_with_blanks[index] = guess
-        end
+        @guess_word_with_blanks[index] = guess if guess == char
       end
-    elsif guess == "save"
+    elsif guess == 'save'
       save_game
       game_saved_text
-    else 
+    else
       wrong_guess_text
       @counter -= 1
       puts "#{@counter} attempts left"
       @already_guessed.push(guess)
       check_loss
     end
-      check_win
+    check_win
   end
 
   def check_win
-    if @guess_word_with_blanks.include?("_") == false
+    if @guess_word_with_blanks.include?('_') == false
       puts @guess_word
       announce_win
       @game_over = true
@@ -68,7 +63,7 @@ class Game
   end
 
   def check_loss
-    if @counter == 0
+    if @counter.zero?
       announce_loss
       reveal_word(@guess_word)
       @game_over = true
@@ -79,19 +74,20 @@ class Game
   def new_game
     new_game_text
     choice = gets.chomp.upcase
-    if choice == "Y"
+    if choice == 'Y'
       initialize
-    else goodbye
+    else
+      goodbye
     end
   end
 
   def turns
     puts @guess_word_with_blanks
     while @game_over == false
-      letter = get_user_letter
+      letter = user_letter
       check_for_match(letter)
       break if @game_over == true
-      puts "________________________"
+      puts '________________________'
       puts @guess_word_with_blanks
     end
   end
@@ -102,39 +98,39 @@ class Game
     if choice == 1
       find_hangman_words
       find_guess_word
+      turns
     elsif choice == 2
-    load_game
-    else invalid_choice_text
+      load_game
+    else
+      invalid_choice_text
     end
   end
 
   def save_game
     game = {
-      :already_guessed => @already_guessed, 
-      :guess_word => @guess_word, 
-      :guess_word_with_blanks => @guess_word_with_blanks, 
-      :counter => @counter, 
-      :game_over => @game_over
+      already_guessed: @already_guessed,
+      guess_word: @guess_word,
+      guess_word_with_blanks: @guess_word_with_blanks,
+      counter: @counter,
+      game_over: @game_over
     }
     json = JSON.generate(game)
-    Dir.mkdir "saved_game" unless Dir.exists? "saved_game"
-    File.open("saved_game/game.json", "w") { |file| file.puts json }
+    Dir.mkdir 'saved_game' unless Dir.exist? 'saved_game'
+    File.open('saved_game/game.json', 'w') { |file| file.puts json }
   end
 
   def load_game
-
     def construct(data_hash)
-      @already_guessed = data_hash["already_guessed"]
-      @guess_word = data_hash["guess_word"]
-      @guess_word_with_blanks = data_hash["guess_word_with_blanks"]
-      @counter = data_hash["counter"]
-      @game_over = data_hash["game_over"]
+      @already_guessed = data_hash['already_guessed']
+      @guess_word = data_hash['guess_word']
+      @guess_word_with_blanks = data_hash['guess_word_with_blanks']
+      @counter = data_hash['counter']
+      @game_over = data_hash['game_over']
     end
 
-    saved_file = File.read("saved_game/game.json")
+    saved_file = File.read('saved_game/game.json')
     data_hash = JSON.parse(saved_file)
     construct(data_hash)
     turns
   end
-
 end
